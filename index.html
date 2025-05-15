@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pomodoro Timer</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: #f2f2f2;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+
+      .container {
+        background: #fff;
+        padding: 2rem;
+        border-radius: 1rem;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 1rem;
+      }
+
+      .modes {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .modes button {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        background: #ddd;
+        color: #333;
+        font-weight: bold;
+      }
+
+      .modes button.active {
+        background: #ff6b6b;
+        color: #fff;
+      }
+
+      .timer {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        color: #222;
+      }
+
+      .controls button {
+        padding: 0.7rem 2rem;
+        font-size: 1.2rem;
+        border: none;
+        border-radius: 30px;
+        background-color: #4caf50;
+        color: white;
+        cursor: pointer;
+      }
+
+      .controls button.pause {
+        background-color: #f44336;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Pomodoro Timer</h1>
+
+      <div class="timer" id="timer">25:00</div>
+      <div class="modes">
+        <button id="pomodoroBtn" class="active">Pomodoro</button>
+        <button id="shortBreakBtn">Short Break</button>
+        <button id="longBreakBtn">Long Break</button>
+      </div>
+      <div class="controls">
+        <button id="startPauseBtn">Start</button>
+      </div>
+      <audio
+        id="startSound"
+        src="https://www.soundjay.com/buttons/sounds/button-3.mp3"
+        preload="auto"
+      ></audio>
+    </div>
+    <script>
+      let mode = "pomodoro";
+      let durations = {
+        pomodoro: 25 * 60,
+        short: 5 * 60,
+        long: 15 * 60,
+      };
+
+      let timerDisplay = document.getElementById("timer");
+      let startPauseBtn = document.getElementById("startPauseBtn");
+      let timerInterval;
+      let remainingTime = durations[mode];
+      let isRunning = false;
+
+      const startSound = document.getElementById("startSound");
+      const endSound = new Audio(
+        "https://www.soundjay.com/button/sounds/beep-07.mp3"
+      );
+
+      // Minta izin notifikasi
+      if ("Notification" in window) {
+        Notification.requestPermission();
+      }
+
+      function updateDisplay(seconds) {
+        let min = Math.floor(seconds / 60);
+        let sec = seconds % 60;
+        timerDisplay.textContent = `${String(min).padStart(2, "0")}:${String(
+          sec
+        ).padStart(2, "0")}`;
+      }
+
+      function showNotification(message) {
+        if (Notification.permission === "granted") {
+          new Notification(message);
+        }
+      }
+
+      function switchMode(newMode) {
+        mode = newMode;
+        clearInterval(timerInterval);
+        isRunning = false;
+        remainingTime = durations[newMode];
+        updateDisplay(remainingTime);
+        startPauseBtn.textContent = "Start";
+
+        document
+          .querySelectorAll(".modes button")
+          .forEach((btn) => btn.classList.remove("active"));
+        document.getElementById(`${newMode}Btn`).classList.add("active");
+      }
+
+      function startTimer() {
+        startSound.play();
+
+        if (isRunning) {
+          clearInterval(timerInterval);
+          isRunning = false;
+          startPauseBtn.textContent = "Start";
+        } else {
+          isRunning = true;
+          startPauseBtn.textContent = "Pause";
+          timerInterval = setInterval(() => {
+            if (remainingTime <= 0) {
+              clearInterval(timerInterval);
+              isRunning = false;
+              startPauseBtn.textContent = "Start";
+              endSound.play();
+              showNotification("Time's up! Take a break or switch mode.");
+              return;
+            }
+            remainingTime--;
+            updateDisplay(remainingTime);
+          }, 1000);
+        }
+      }
+
+      document
+        .getElementById("pomodoroBtn")
+        .addEventListener("click", () => switchMode("pomodoro"));
+      document
+        .getElementById("shortBreakBtn")
+        .addEventListener("click", () => switchMode("short"));
+      document
+        .getElementById("longBreakBtn")
+        .addEventListener("click", () => switchMode("long"));
+      startPauseBtn.addEventListener("click", startTimer);
+
+      updateDisplay(remainingTime);
+    </script>
+  </body>
+</html>
